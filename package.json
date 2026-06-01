@@ -10,6 +10,9 @@
         "format:check": "prettier --config .config/prettier.config.mjs --ignore-path .config/.prettierignore --check .",
         "typecheck": "tsc --noEmit",
         "lint": "eslint .",
+        "db:generate": "drizzle-kit generate --config .config/drizzle.config.ts",
+        "db:migrate": "drizzle-kit migrate --config .config/drizzle.config.ts",
+        "db:up": "docker compose -f infra/docker-compose.yml up -d",
         "test": "vitest --config .config/vitest.config.ts",
         "test:run": "vitest run --config .config/vitest.config.ts",
         "test:coverage": "vitest run --coverage --config .config/vitest.config.ts",
@@ -20,12 +23,15 @@
         "prepare": "husky"
     },
     "dependencies": {
+        "drizzle-orm": "^0.45.2",
         "next": "16.2.6",
+        "postgres": "^3.4.9",
         "react": "19.2.4",
         "react-dom": "19.2.4",
         "zod": "^4.4.3"
     },
     "devDependencies": {
+        "@electric-sql/pglite": "^0.4.6",
         "@playwright/test": "^1.60.0",
         "@tailwindcss/postcss": "^4",
         "@testing-library/dom": "^10.4.1",
@@ -37,6 +43,7 @@
         "@types/react-dom": "^19",
         "@vitejs/plugin-react": "^6.0.2",
         "@vitest/coverage-v8": "^4.1.8",
+        "drizzle-kit": "^0.31.10",
         "eslint": "^9",
         "eslint-config-next": "16.2.6",
         "eslint-config-prettier": "^10.1.8",

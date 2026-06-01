@@ -22,7 +22,13 @@ export default defineConfig({
             // Only logic + UI carry coverage bars; app/ boilerplate and glue
             // are excluded until they hold real, testable behavior.
             include: ["src/lib/**", "src/components/**"],
-            exclude: ["**/*.test.{ts,tsx}", "**/*.d.ts"],
+            exclude: [
+                "**/*.test.{ts,tsx}",
+                "**/*.d.ts",
+                // Declarative Drizzle table definitions — exercised indirectly
+                // by the repo integration tests; nothing to unit-test directly.
+                "src/lib/db/schema.ts",
+            ],
             // Initial floors from docs/CODING_STANDARDS.md → Testing. Raise
             // these as new tests land; never lower them to make red go green.
             thresholds: {

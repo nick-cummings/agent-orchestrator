@@ -1,0 +1,24 @@
+# Local dev Postgres for the Orchestrator kanban.
+#   docker compose -f infra/docker-compose.yml up -d
+# Then point the app at it via DATABASE_URL (see .env.example) and run
+# `npm run db:migrate`. Tests do NOT need this — they use in-process PGlite.
+services:
+    postgres:
+        image: postgres:17-alpine
+        container_name: orchestrator-postgres
+        environment:
+            POSTGRES_USER: orchestrator
+            POSTGRES_PASSWORD: orchestrator
+            POSTGRES_DB: orchestrator
+        ports:
+            - "5432:5432"
+        volumes:
+            - orchestrator-pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U orchestrator"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    orchestrator-pgdata:
