@@ -167,11 +167,15 @@ Rules:
   `tsconfig.json`, the ESLint flat config, and similar resolver-pinned files —
   plus `README.md` and `AGENTS.md`. If a config sits at the root, its reason for
   being there should be obvious or noted. Known forced-root configs in this
-  repo: `package.json`, `tsconfig.json`, `eslint.config.mjs`, `next.config.ts`,
-  and **`postcss.config.mjs`** — Next's Turbopack only discovers the PostCSS
-  config at the project root, so relocating it silently breaks Tailwind
-  (verified). Prettier, Vitest, and Playwright configs _do_ relocate cleanly via
-  `--config`, so they live in `.config/`.
+  repo: `package.json`, `tsconfig.json`, `eslint.config.mjs`, and
+  `next.config.ts`.
+- **Sometimes the relocation is a filename, not a flag.** PostCSS lives in
+  `.config/` as **`postcssrc.mjs`** — Next's Turbopack resolves it through
+  `postcss-load-config`, which searches `.config/postcssrc.*` but _not_
+  `.config/postcss.config.*` (verified: the latter silently breaks Tailwind, the
+  former works). When a tool "can't find" a config in `.config/`, check whether
+  it wants a different name there before concluding it's root-only. Prettier,
+  Vitest, and Playwright relocate via `--config`; PostCSS relocates by name.
 - **`docs/` is the home for all documentation**, including the ADRs
   (`docs/decisions/NNNN-*.md`), feature docs (`docs/features/*.md`), and
   runbooks (`docs/operations/*.md`) described under [Documentation](#documentation).
