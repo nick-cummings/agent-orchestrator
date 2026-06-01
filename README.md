@@ -15,10 +15,14 @@ It's a thin, opinionated orchestration layer over two **swappable** roles — a
 conversational **Brain** and a cloud execution **Engine**. Not a better model or
 a better agent; a far better way to _manage many agents at once_.
 
-> **Status: Phase 0 in progress.** The Next.js app is scaffolded with the full
-> verification gate wired up — Prettier, type-checked ESLint, Vitest with
-> enforced coverage thresholds, and Playwright for E2E. The domain contracts,
-> Zod schemas, and the static kanban UI are next. See [Roadmap](#roadmap).
+> **Status: Phase 0 nearly complete.** The Next.js app is scaffolded with the
+> full verification gate (Prettier, type-checked ESLint, Vitest with enforced
+> coverage thresholds, Playwright E2E). The domain contracts, Zod schemas,
+> config-inheritance merge, and Drizzle persistence are in place, and the
+> **static kanban** — boards/columns/cards CRUD with drag-to-reorder — is wired
+> end-to-end (REST routes, React Query, dnd-kit). See
+> [`docs/features/kanban.md`](./docs/features/kanban.md) and
+> [Roadmap](#roadmap).
 
 ## The idea
 
@@ -109,6 +113,7 @@ docs/
 ├── agent-orchestrator-spec.md   # what & why — vision, requirements, data model, phases
 ├── implementation-plan.md       # how — contracts, Zod schemas, agent loop, adapter factories
 ├── CODING_STANDARDS.md          # the engineering rules, each wired to a gate
+├── STYLE_GUIDE.md               # the visual contract — semantic colour tokens
 ├── decisions/                   # ADRs (append-only)
 ├── features/                    # feature docs
 └── operations/                  # runbooks
