@@ -149,13 +149,13 @@ Override discipline:
 The project root is reserved for files the toolchain **forces** to live there.
 Everything else sorts into a top-level home, so the root stays scannable:
 
-| Goes in     | What                                                                       |
-| ----------- | -------------------------------------------------------------------------- |
-| `src/`      | All application code.                                                       |
-| `infra/`    | All infrastructure definitions — IaC, Docker/Compose, deploy + DB config.  |
-| `docs/`     | All documentation — spec, plan, this file, ADRs, feature docs, runbooks.   |
-| `.config/`  | Every tool config file that _can_ be relocated there.                      |
-| _(root)_    | Only what must be there (below) + `README.md` + `AGENTS.md`.               |
+| Goes in    | What                                                                      |
+| ---------- | ------------------------------------------------------------------------- |
+| `src/`     | All application code.                                                     |
+| `infra/`   | All infrastructure definitions — IaC, Docker/Compose, deploy + DB config. |
+| `docs/`    | All documentation — spec, plan, this file, ADRs, feature docs, runbooks.  |
+| `.config/` | Every tool config file that _can_ be relocated there.                     |
+| _(root)_   | Only what must be there (below) + `README.md` + `AGENTS.md`.              |
 
 Rules:
 

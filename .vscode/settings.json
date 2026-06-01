@@ -1,6 +1,9 @@
 {
-  "files.autoSave": "afterDelay",
-  "files.autoSaveDelay": 500,
-  "editor.formatOnSave": true,
-  "editor.tabSize": 4
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 500,
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "prettier.configPath": ".config/prettier.config.mjs",
+    "prettier.ignorePath": ".config/.prettierignore"
 }

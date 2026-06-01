@@ -4,11 +4,12 @@ Operational guide for AI coding agents working in this repo. Read this first,
 then the three source docs it points to. If anything here conflicts with the
 source docs, the source docs win — and flag the conflict.
 
-> **Status: design phase.** The repo currently contains only design docs — no
-> Next.js app, no `package.json`, no `src/`. The commands and directory layout
-> below are the **target** defined by the docs, not yet reality. The next build
-> step is **Phase 0** (contracts + skeleton). Don't assume any tooling exists
-> until you've scaffolded it.
+> **Status: Phase 0 in progress.** The Next.js app (App Router, React 19,
+> Tailwind v4) is scaffolded and the verification gate is live and green —
+> format, typecheck, type-checked ESLint, and Vitest with enforced coverage.
+> Sample tested code lives in `src/lib/format.ts` and `src/components/Snippet/`.
+> Still to build: domain contracts, Zod schemas, and the static kanban UI.
+> **Run `npm run verify:fast` before every commit.**
 
 ## What this is
 
@@ -20,9 +21,9 @@ Google's cloud computer-off). Single-user, personal scale.
 
 Full context:
 
-- [`docs/agent-orchestrator-spec.md`](./docs/agent-orchestrator-spec.md) — *what & why* (vision, requirements, data model, phases).
-- [`docs/implementation-plan.md`](./docs/implementation-plan.md) — *how* (contracts, Zod schemas, the agent loop, adapter factories).
-- [`docs/CODING_STANDARDS.md`](./docs/CODING_STANDARDS.md) — *the rules*, each wired to a gate.
+- [`docs/agent-orchestrator-spec.md`](./docs/agent-orchestrator-spec.md) — _what & why_ (vision, requirements, data model, phases).
+- [`docs/implementation-plan.md`](./docs/implementation-plan.md) — _how_ (contracts, Zod schemas, the agent loop, adapter factories).
+- [`docs/CODING_STANDARDS.md`](./docs/CODING_STANDARDS.md) — _the rules_, each wired to a gate.
 
 ## The one architectural rule
 
@@ -40,12 +41,12 @@ find yourself adding an abstraction outside these seams, stop and justify it.
 ## Code conventions (load-bearing — every line must follow)
 
 - **No classes, no `this`, no `new`, no `implements`.** Contracts are `type`
-  aliases describing a *record of functions*. Adapters are **factory functions**
+  aliases describing a _record of functions_. Adapters are **factory functions**
   (`createClaudeBrain(deps): ConversationProvider`) that capture deps in a
   closure. Logic lives in standalone **pure functions**; side effects (HTTP, DB,
   clock) are injected via `deps`.
 - **Zod is the single source of truth** for every validated shape — tool inputs,
-  domain entities, config/routing, and *especially* untrusted vendor responses.
+  domain entities, config/routing, and _especially_ untrusted vendor responses.
   Define the Zod schema, derive the type with `z.infer`, derive tool JSON
   Schemas with `zodToJsonSchema`, and `.parse()` at **every** boundary. Vendor
   drift (e.g. Jules `v1alpha`) must fail loudly at the adapter, not silently
@@ -64,11 +65,11 @@ find yourself adding an abstraction outside these seams, stop and justify it.
 Catch mistakes **mechanically, not in review.** A rule not wired into a gate is
 a suggestion, and suggestions rot. Layer by speed:
 
-| Command         | Runs                            | When                |
-| --------------- | ------------------------------- | ------------------- |
-| `verify:static` | format check + typecheck + lint | constantly, on save |
+| Command         | Runs                               | When                |
+| --------------- | ---------------------------------- | ------------------- |
+| `verify:static` | format check + typecheck + lint    | constantly, on save |
 | `verify:fast`   | `verify:static` + unit/integration | before every commit |
-| `verify`        | `verify:fast` + E2E             | before push; in CI  |
+| `verify`        | `verify:fast` + E2E                | before push; in CI  |
 
 - **Iterate on `verify:fast`; run full `verify` once before pushing.**
 - **Typecheck runs before lint** (type-aware lint is downstream of types).
@@ -141,7 +142,7 @@ factories from config. Adapters are anti-corruption layers.
 
 ## Build phases (where we are → where we're going)
 
-0. **Contracts & skeleton** ← *next.* Contract types, domain Zod schemas,
+0. **Contracts & skeleton** ← _next._ Contract types, domain Zod schemas,
    `buildProviders` with stub factories that throw, Next.js app + Postgres
    schema + static kanban CRUD (dnd-kit, organizational only).
 1. **Jules Engine, no Brain** — `createJulesEngine` + poller; a card starts a
@@ -164,5 +165,5 @@ factories from config. Adapters are anti-corruption layers.
   `awaiting_approval`, resume as a new turn. (Open design item.)
 - **`resolveConfig` array/record merge** (skillIds, defaultRepos, approvalPolicy)
   — union-vs-replace semantics still need pinning down. (Open design item.)
-- **Jules is `v1alpha`** — it *will* change. Contain every Jules detail inside
+- **Jules is `v1alpha`** — it _will_ change. Contain every Jules detail inside
   `createJulesEngine`; the Zod parse at the boundary is the firewall.

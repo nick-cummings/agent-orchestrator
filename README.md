@@ -1,32 +1,33 @@
 # Orchestrator
 
 > A personal PWA for orchestrating cloud coding agents in a kanban-style
-> workspace. *(Working title — name TBD.)*
+> workspace. _(Working title — name TBD.)_
 
 The Claude app today is a flat, linear list of chats: no way to organize
 parallel streams of work, and bound to a single GitHub account. Orchestrator
 replaces that with a **board-and-card workspace** — Trello-style columns where
 **each card is its own agent conversation** that can kick off and steer cloud
 coding work. Run many in parallel, jump between them without losing your place,
-and point each one at a *different* set of credentials (a different GitHub
+and point each one at a _different_ set of credentials (a different GitHub
 account, Atlassian site, mailbox, …).
 
 It's a thin, opinionated orchestration layer over two **swappable** roles — a
 conversational **Brain** and a cloud execution **Engine**. Not a better model or
-a better agent; a far better way to *manage many agents at once*.
+a better agent; a far better way to _manage many agents at once_.
 
-> **Status: design phase.** This repo currently holds the design docs. The
-> application has not been scaffolded yet — see [Roadmap](#roadmap). The next
-> step is **Phase 0** (contracts + skeleton).
+> **Status: Phase 0 in progress.** The Next.js app is scaffolded with the full
+> verification gate wired up — Prettier, type-checked ESLint, Vitest with
+> enforced coverage thresholds, and Playwright for E2E. The domain contracts,
+> Zod schemas, and the static kanban UI are next. See [Roadmap](#roadmap).
 
 ## The idea
 
 A card does two separable things, and each is a **pluggable seam**:
 
-| Role | What it does | Default | Contract |
-| --- | --- | --- | --- |
-| **Brain** | Holds the chat, decides what to do, narrates progress | **Claude** (Agent SDK, on the Max 5× subscription credit) | `ConversationProvider` |
-| **Engine** | Runs the coding task in the cloud, edits the repo, opens a PR | **Jules** (Google AI Pro, flat-rate, GitHub-native, computer-off) | `ExecutionEngine` |
+| Role       | What it does                                                  | Default                                                           | Contract               |
+| ---------- | ------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------- |
+| **Brain**  | Holds the chat, decides what to do, narrates progress         | **Claude** (Agent SDK, on the Max 5× subscription credit)         | `ConversationProvider` |
+| **Engine** | Runs the coding task in the cloud, edits the repo, opens a PR | **Jules** (Google AI Pro, flat-rate, GitHub-native, computer-off) | `ExecutionEngine`      |
 
 The default **hybrid** binding is the cheap path: the Brain only converses
 (light tokens, rides the subscription credit) while the Engine does the
@@ -36,10 +37,10 @@ sandbox is an adapter + a config flip — never a rewrite.
 ## Design principles
 
 - **Organization is manual and visual.** Dragging a card never triggers a
-  workflow — columns are for *you*, not automation.
+  workflow — columns are for _you_, not automation.
 - **One card = one conversation = one isolated context.**
 - **Bring-your-own-credentials, per card.** Multi-account is first-class.
-- **Transparent by default.** See the Brain's narration *and* the Engine's
+- **Transparent by default.** See the Brain's narration _and_ the Engine's
   activity feed; steer or interrupt the moment it drifts.
 - **Context is durable.** History always lives in Postgres; a card reopens
   exactly where you left off, even after days.
@@ -52,17 +53,17 @@ sandbox is an adapter + a config flip — never a rewrite.
 
 ## Core concepts
 
-| Concept | Definition |
-| --- | --- |
-| **Board** | A top-level workspace; contains ordered columns. |
-| **Column** | A user-defined status lane (Backlog, In progress, …). |
-| **Card** | A unit of work in one column; has exactly one **Session**. |
-| **Session** | The card's conversation: history, provider routing, config, Connections, linked Executions. |
-| **Execution** | One unit of cloud coding work run by an Engine (e.g. a Jules session). |
-| **Connection** | A named, authenticated account profile (GitHub · personal, Atlassian · work, …), reusable across cards. |
-| **Config** | Settings defined at user / board / card; effective config = most-specific-wins merge. |
-| **ApprovalPolicy** | Action category → `auto` / `ask`, governing what runs without a tap. |
-| **Skill** | A reusable Agent Skill stored at user/board level, activated per card. |
+| Concept            | Definition                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| **Board**          | A top-level workspace; contains ordered columns.                                                        |
+| **Column**         | A user-defined status lane (Backlog, In progress, …).                                                   |
+| **Card**           | A unit of work in one column; has exactly one **Session**.                                              |
+| **Session**        | The card's conversation: history, provider routing, config, Connections, linked Executions.             |
+| **Execution**      | One unit of cloud coding work run by an Engine (e.g. a Jules session).                                  |
+| **Connection**     | A named, authenticated account profile (GitHub · personal, Atlassian · work, …), reusable across cards. |
+| **Config**         | Settings defined at user / board / card; effective config = most-specific-wins merge.                   |
+| **ApprovalPolicy** | Action category → `auto` / `ask`, governing what runs without a tap.                                    |
+| **Skill**          | A reusable Agent Skill stored at user/board level, activated per card.                                  |
 
 ## Architecture
 
@@ -122,27 +123,30 @@ Once scaffolded, source follows the layout in
 
 ## Getting started
 
-> Not yet runnable — the app hasn't been scaffolded. Once Phase 0 lands, the
-> verification gate defined in the coding standards will be the entry point:
->
-> ```bash
-> npm install
-> npm run verify:fast   # format + typecheck + lint + unit/integration
-> npm run dev
-> ```
->
-> Full `npm run verify` (adds E2E) runs before every push and in CI.
+```bash
+npm install
+npm run dev          # http://localhost:3000
+
+npm run verify:fast  # format check + typecheck + lint + tests w/ coverage
+npm run verify       # adds Playwright E2E (run `npx playwright install` once first)
+```
+
+The verification gate is the entry point (see
+[`docs/CODING_STANDARDS.md`](./docs/CODING_STANDARDS.md)). Iterate on
+`verify:fast`; run the full `verify` before pushing — and CI runs it on every
+PR. Tool configs live in [`.config/`](./.config); only resolver-pinned files
+(`package.json`, `tsconfig.json`, `eslint.config.mjs`) sit at the root.
 
 ## Roadmap
 
-| Phase | Deliverable |
-| --- | --- |
+| Phase | Deliverable                                                                                                              |
+| ----- | ------------------------------------------------------------------------------------------------------------------------ |
 | **0** | Contracts & skeleton — contract types, Zod schemas, `buildProviders` stubs, Next.js app + Postgres + static kanban CRUD. |
-| **1** | Jules Engine, no Brain — a working computer-off cloud-agent kanban on Jules alone. |
-| **2** | Claude Brain + agent loop — full hybrid; Engine exposed as tools; `ApprovalPolicy` gate. |
-| **3** | Connections, settings inheritance & multi-account — *the differentiator*. |
-| **4** | PWA polish + computer-off UX — installable, web-push, deep links. |
-| **5** | Prove the swap (future) — `createSandboxEngine` (Claude-only), `createGeminiBrain` (Gemini-only). |
+| **1** | Jules Engine, no Brain — a working computer-off cloud-agent kanban on Jules alone.                                       |
+| **2** | Claude Brain + agent loop — full hybrid; Engine exposed as tools; `ApprovalPolicy` gate.                                 |
+| **3** | Connections, settings inheritance & multi-account — _the differentiator_.                                                |
+| **4** | PWA polish + computer-off UX — installable, web-push, deep links.                                                        |
+| **5** | Prove the swap (future) — `createSandboxEngine` (Claude-only), `createGeminiBrain` (Gemini-only).                        |
 
 ## Contributing
 
@@ -153,4 +157,4 @@ a gate** — `npm run verify` is the source of truth.
 
 ---
 
-*Personal project. Owner: Nick. Spec v0.6 · Plan v0.3 — May 2026.*
+_Personal project. Owner: Nick. Spec v0.6 · Plan v0.3 — May 2026._
