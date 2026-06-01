@@ -36,6 +36,16 @@ export default defineConfig([
             eqeqeq: ["error", "always"],
             // Functional style: contracts and props are `type` aliases, not interfaces.
             "@typescript-eslint/consistent-type-definitions": ["error", "type"],
+            // Allow intentionally-unused args/vars prefixed with `_` (e.g. deps
+            // a stub captures but doesn't use yet).
+            "@typescript-eslint/no-unused-vars": [
+                "error",
+                {
+                    argsIgnorePattern: "^_",
+                    varsIgnorePattern: "^_",
+                    caughtErrorsIgnorePattern: "^_",
+                },
+            ],
             "max-lines": ["error", 500],
             "no-console": ["warn", { allow: ["warn", "error"] }],
             "no-implicit-coercion": "error",
