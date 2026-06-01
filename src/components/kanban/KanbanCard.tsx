@@ -73,7 +73,7 @@ export const KanbanCard = ({ card, onRename, onDelete }: KanbanCardProps) => {
                     onDoubleClick={() => {
                         setEditing(true);
                     }}
-                    className="flex-1 cursor-grab text-sm text-primary"
+                    className="flex-1 touch-none cursor-grab text-sm text-primary"
                 >
                     {card.title}
                 </span>

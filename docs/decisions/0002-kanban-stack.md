@@ -57,3 +57,24 @@ current board view and posts it; the server just writes it.
   reference, so the extra argument never leaks.
 - Adding GitLab/other VCS or realtime later does not touch this layer — it is
   the concrete, non-volatile part of the system per the "two seams only" rule.
+
+## Addendum — touch input & drag testing (2026-06-01)
+
+Touch support was added after the initial slice. Two judgments worth recording:
+
+- **`MouseSensor` + `TouchSensor`, not `PointerSensor`.** `PointerSensor`
+  captures touch too (as pointer events), so its `distance` constraint would
+  pre-empt a touch press-hold and turn a scroll swipe into a drag. Separate
+  sensors give each input its own activation: mouse drags after a 4px nudge;
+  touch requires a short press-hold (`delay` + `tolerance`) so a swipe still
+  scrolls. The drag handle sets `touch-action: none` so an engaged touch drag
+  isn't hijacked by the browser's scroll gesture.
+- **Touch is E2E-tested on Chromium, not WebKit.** Playwright cannot construct
+  synthetic touch events in WebKit (the `Touch`/`TouchEvent` constructors throw
+  `Illegal constructor`) and CDP touch injection is Chromium-only. So the
+  `TouchSensor` is exercised with real touch (CDP `Input.dispatchTouchEvent`) on
+  a `mobile-chromium` (Pixel 7) project; `mobile-webkit` keeps the
+  render/create/rename coverage and skips drag. Cross-column drag is desktop-
+  only — both columns must be on-screen, which a phone-width viewport can't fit.
+  This is a harness limitation, surfaced via `test.skip` reasons rather than
+  hidden.

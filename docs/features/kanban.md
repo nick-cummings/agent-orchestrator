@@ -68,19 +68,33 @@ refetch-on-settle.
 - **Integration** — every route end-to-end against a PGlite database
   (`src/app/api/routes.test.ts`); component wiring with a React Query client and
   a mocked API client (`BoardView`, `BoardList`, `KanbanColumn`).
-- **E2E** (`tests/e2e/`, desktop Chromium + mobile WebKit) — the boards index
-  renders (`smoke.spec.ts`); and the kanban interactions that happy-dom can't
-  reach (`kanban.spec.ts`): render, inline create, inline rename, and — the
-  reason E2E exists here — **dnd-kit drag-to-reorder** within a column and
-  across columns. These run against an in-memory API mock
+- **E2E** (`tests/e2e/`) — the boards index renders (`smoke.spec.ts`); and the
+  kanban interactions that happy-dom can't reach (`kanban.spec.ts`): render,
+  inline create, inline rename, and — the reason E2E exists here — **dnd-kit
+  drag-to-reorder**. These run against an in-memory API mock
   (`tests/e2e/support/mockApi.ts`) installed via `page.route`, so the suite
   needs no database; writes mutate the mock so the request→refetch→re-render
-  loop is real. A custom pointer-drag helper (`support/drag.ts`) crosses
-  dnd-kit's activation threshold with stepped mouse moves. The drag flows are
-  desktop-only — mobile WebKit's touch emulation makes the threshold flaky.
+  loop is real. Drag helpers live in `support/drag.ts`.
+
+    The project matrix and what drags where:
+
+    | Project          | Browser / device   | Drag input                       |
+    | ---------------- | ------------------ | -------------------------------- |
+    | desktop-chromium | Desktop Chrome     | mouse → `MouseSensor`            |
+    | mobile-chromium  | Pixel 7 (touch)    | real touch (CDP) → `TouchSensor` |
+    | mobile-webkit    | iPhone 14 (WebKit) | drag skipped (see below)         |
+
+    Mouse drag uses stepped `page.mouse` moves; touch drag injects real touch via
+    the Chromium DevTools Protocol (`Input.dispatchTouchEvent`), honouring the
+    sensor's press-hold delay. **WebKit drag is skipped** — Playwright can neither
+    construct synthetic touch events nor drive touch via CDP in WebKit, so the
+    TouchSensor is proven on mobile-chromium instead. **Cross-column drag is
+    desktop-only** — on a phone-width viewport the second column is off-canvas, so
+    its drop target isn't reachable; the within-column touch reorder proves the
+    TouchSensor, and desktop covers the cross-column case.
 
 The drag _maths_ are also unit-tested via `resolveDragMove`; the E2E layer
-proves the real pointer interaction end-to-end.
+proves the real mouse and touch interactions end-to-end.
 
 ## Not yet
 

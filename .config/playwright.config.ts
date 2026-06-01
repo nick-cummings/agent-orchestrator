@@ -18,10 +18,13 @@ export default defineConfig({
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
     },
-    // The matrix that matters: a desktop browser and a mobile one, since the
-    // primary surface is a phone.
+    // The matrix that matters: a desktop browser and a mobile one (the primary
+    // surface is a phone, hence iPhone WebKit). A touch-capable Chromium phone
+    // is added so the dnd-kit TouchSensor can be driven with real touch input —
+    // Playwright can inject touch via CDP only in Chromium, not WebKit.
     projects: [
         { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] } },
         { name: "mobile-webkit", use: { ...devices["iPhone 14"] } },
+        { name: "mobile-chromium", use: { ...devices["Pixel 7"] } },
     ],
 });

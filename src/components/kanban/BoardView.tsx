@@ -2,7 +2,8 @@
 
 import {
     DndContext,
-    PointerSensor,
+    MouseSensor,
+    TouchSensor,
     useSensor,
     useSensors,
     type DragEndEvent,
@@ -24,8 +25,17 @@ import { resolveDragMove } from "@/lib/kanban/move";
 export const BoardView = ({ boardId }: { boardId: string }) => {
     const queryClient = useQueryClient();
     const key = ["board", boardId];
+    // Mouse and touch get separate sensors so each input has its own activation
+    // (PointerSensor would capture touch too, letting its distance constraint
+    // pre-empt the touch press-hold). Mouse drags after a 4px nudge; touch
+    // requires a short press-hold so a swipe still scrolls the board, with
+    // `tolerance` for finger wobble. The drag handle also sets
+    // `touch-action: none` so an engaged touch drag isn't hijacked by scroll.
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+        useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+        useSensor(TouchSensor, {
+            activationConstraint: { delay: 120, tolerance: 8 },
+        }),
     );
 
     const board = useQuery({
