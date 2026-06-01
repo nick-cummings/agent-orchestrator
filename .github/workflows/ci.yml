@@ -1,11 +1,15 @@
 name: CI
 
+# Pre-1.0 we don't open PRs (see docs/CODING_STANDARDS.md → Git & commits), so
+# CI runs on a push to ANY branch — that's the pre-merge gate for a feature
+# branch, and it re-confirms on `main` after a fast-forward merge. `pull_request`
+# stays wired for when PRs resume at 1.0 (it won't fire while none are open).
 on:
     push:
-        branches: [main]
+        branches: ["**"]
     pull_request:
 
-# Cancel superseded runs on the same ref.
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a branch).
 concurrency:
     group: ci-${{ github.ref }}
     cancel-in-progress: true

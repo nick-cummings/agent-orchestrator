@@ -47,9 +47,11 @@ Rules:
 
 - **Iterate on `verify:fast`; run full `verify` once before you push.** Don't
   pay the E2E cost on every save.
-- **CI runs the full `verify` on every PR and every push to `main`.** CI — not
-  the local hook — is the source of truth. Both gates must be green before
-  code lands on `main`.
+- **CI runs the full `verify` on every push to every branch** (and on PRs once
+  those resume at 1.0). CI — not the local hook — is the source of truth. A
+  feature branch's CI run is the **pre-merge gate**: it must be green before the
+  branch fast-forwards into `main`, which then re-confirms on the `main` push.
+  Pre-1.0 we merge branches directly rather than open PRs.
 - **A pre-push git hook (Husky) runs `verify`**, but is _change-aware_:
   docs/CI/meta-only pushes (`*.md`, `docs/**`, `.github/**`, dotfiles) skip the
   test suites and run only `verify:static`. Code-affecting changes run the full
@@ -326,5 +328,6 @@ the thing your future self and reviewers can't reconstruct from the diff.
   the history bisects cleanly.
 - **Never force-push a shared branch; never rewrite landed history.** Add
   commits forward.
-- **PRs reference the doc that ships with them**, and don't merge on green CI
-  alone — a human makes the merge call.
+- **Pre-1.0: merge feature branches directly, no PRs.** Build on a branch, get
+  its CI green (the pre-merge gate), then fast-forward into `main` and push.
+  PRs — and "a human makes the merge call beyond green CI" — resume at 1.0.
