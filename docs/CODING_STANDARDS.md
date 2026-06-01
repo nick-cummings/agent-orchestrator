@@ -166,7 +166,12 @@ Rules:
 - **Allowed at root** are configs with no working alternative — `package.json`,
   `tsconfig.json`, the ESLint flat config, and similar resolver-pinned files —
   plus `README.md` and `AGENTS.md`. If a config sits at the root, its reason for
-  being there should be obvious or noted.
+  being there should be obvious or noted. Known forced-root configs in this
+  repo: `package.json`, `tsconfig.json`, `eslint.config.mjs`, `next.config.ts`,
+  and **`postcss.config.mjs`** — Next's Turbopack only discovers the PostCSS
+  config at the project root, so relocating it silently breaks Tailwind
+  (verified). Prettier, Vitest, and Playwright configs _do_ relocate cleanly via
+  `--config`, so they live in `.config/`.
 - **`docs/` is the home for all documentation**, including the ADRs
   (`docs/decisions/NNNN-*.md`), feature docs (`docs/features/*.md`), and
   runbooks (`docs/operations/*.md`) described under [Documentation](#documentation).

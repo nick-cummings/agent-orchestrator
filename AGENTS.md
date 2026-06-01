@@ -117,7 +117,7 @@ root holds only what the toolchain forces there, plus `README.md` + `AGENTS.md`.
 See [`docs/CODING_STANDARDS.md` → Project layout](./docs/CODING_STANDARDS.md).
 
 ```
-.                # root: package.json, tsconfig.json, ESLint flat config, README.md, AGENTS.md
+.                # root: package.json, tsconfig.json, eslint.config.mjs, next.config.ts, postcss.config.mjs, README.md, AGENTS.md
 ├── src/         # ALL application code
 │   ├── app/         # routes + API handlers (thin; delegate to lib)
 │   ├── components/  # UI, one folder per feature; co-located tests
@@ -127,14 +127,16 @@ See [`docs/CODING_STANDARDS.md` → Project layout](./docs/CODING_STANDARDS.md).
 │   └── test-utils/
 ├── infra/       # ALL infrastructure: IaC, Docker/Compose, deploy + DB config
 ├── docs/        # ALL docs: spec, plan, CODING_STANDARDS, ADRs, feature docs, runbooks
-├── .config/     # every tool config that can be relocated (Prettier, Vitest, Tailwind, ...)
+├── .config/     # relocatable tool configs (Prettier, Vitest, Playwright)
 └── tests/e2e/   # Playwright (desktop Chromium + mobile WebKit)
 ```
 
 **Config placement:** a config file goes in `.config/` **unless the tool can't
 find it there** — check for a `--config .config/<file>` flag or `.config/`
 discovery before defaulting to the root. Root configs (`package.json`,
-`tsconfig.json`, ESLint flat config) are the resolver-pinned exceptions only.
+`tsconfig.json`, `eslint.config.mjs`, `next.config.ts`, `postcss.config.mjs`)
+are the resolver-pinned exceptions only — note Turbopack forces `postcss.config`
+to the root (relocating it silently breaks Tailwind).
 
 The core domain imports **types (contracts) only — never concrete adapters**. A
 single composition root (`buildProviders(routing, deps)`) calls the right

@@ -1,0 +1,50 @@
+# Change-aware pre-push gate (docs/CODING_STANDARDS.md → The verification gate).
+# Docs/CI/meta-only pushes run verify:static; anything touching code or config
+# runs the full verify. CI re-runs the full verify regardless — it's the source
+# of truth; this hook is a fast local backstop.
+
+zero="0000000000000000000000000000000000000000"
+range=""
+
+# stdin lines: <local_ref> <local_sha> <remote_ref> <remote_sha>
+while read -r local_ref local_sha remote_ref remote_sha; do
+    [ "$local_sha" = "$zero" ] && continue # branch deletion — nothing to verify
+    if [ "$remote_sha" = "$zero" ]; then
+        # New branch on the remote: diff against main if we have it.
+        if git rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
+            range="origin/main..$local_sha"
+        fi
+    else
+        range="$remote_sha..$local_sha"
+    fi
+done
+
+# No resolvable range (e.g. first push, no origin/main yet) → verify everything.
+if [ -z "$range" ]; then
+    echo "pre-push: no diff range → running full verify"
+    npm run verify
+    exit $?
+fi
+
+changed=$(git diff --name-only "$range")
+if [ -z "$changed" ]; then
+    echo "pre-push: no file changes in range → skipping"
+    exit 0
+fi
+
+# Treat docs and project meta as non-code; everything else (incl. .config/) is code.
+code_changed=0
+for f in $changed; do
+    case "$f" in
+    *.md | docs/* | .github/* | .vscode/* | .husky/* | .gitignore | LICENSE) : ;;
+    *) code_changed=1 ;;
+    esac
+done
+
+if [ "$code_changed" = "1" ]; then
+    echo "pre-push: code/config changes → full verify"
+    npm run verify
+else
+    echo "pre-push: docs/meta only → verify:static"
+    npm run verify:static
+fi

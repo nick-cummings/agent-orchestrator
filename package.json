@@ -16,7 +16,8 @@
         "test:e2e": "playwright test --config .config/playwright.config.ts",
         "verify:static": "npm run format:check && npm run typecheck && npm run lint",
         "verify:fast": "npm run verify:static && npm run test:coverage",
-        "verify": "npm run verify:fast && npm run test:e2e"
+        "verify": "npm run verify:fast && npm run test:e2e",
+        "prepare": "husky"
     },
     "dependencies": {
         "next": "16.2.6",
@@ -39,6 +40,7 @@
         "eslint-config-next": "16.2.6",
         "eslint-config-prettier": "^10.1.8",
         "happy-dom": "^20.9.0",
+        "husky": "^9.1.7",
         "prettier": "^3.8.3",
         "tailwindcss": "^4",
         "typescript": "^5",
