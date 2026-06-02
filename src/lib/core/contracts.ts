@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 import type {
-    Activity,
     BrainId,
     CredKind,
     ExecutionState,
     ExecutorId,
     Message,
+    NormalizedActivity,
     RepoRef,
 } from "@/lib/core/schemas";
 
@@ -102,7 +102,10 @@ export type ExecutionEngine = {
         message: string,
         cred: ResolvedCredential,
     ) => Promise<void>;
-    listActivities: (ref: string, since?: string) => Promise<Activity[]>;
+    listActivities: (
+        ref: string,
+        since?: string,
+    ) => Promise<NormalizedActivity[]>;
     getStatus: (
         ref: string,
     ) => Promise<{ state: ExecutionState; updatedAt: string }>;

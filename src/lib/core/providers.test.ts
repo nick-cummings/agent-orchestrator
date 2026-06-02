@@ -1,7 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ExecutionResult, type ResolvedCredential } from "@/lib/core/contracts";
-import { NotImplementedError, buildProviders } from "@/lib/core/providers";
+import {
+    NotImplementedError,
+    type ProviderDeps,
+    buildProviders,
+} from "@/lib/core/providers";
 import type { ProviderRouting } from "@/lib/core/schemas";
 
 const CRED: ResolvedCredential = { kind: "jules_api_key", value: "ref_x" };
@@ -9,6 +13,16 @@ const REPO = {
     connectionId: "conn_1",
     repoUrl: "https://github.com/acme/app",
     branch: "main",
+};
+
+// The real Jules engine needs injected deps; a never-called fetch suffices for
+// wiring tests (no method is invoked here).
+const DEPS: ProviderDeps = {
+    jules: {
+        fetch: vi.fn() as unknown as typeof fetch,
+        baseUrl: "https://jules.example/v1alpha",
+        apiKey: "k",
+    },
 };
 
 describe("buildProviders — routing/swap point", () => {
@@ -39,17 +53,17 @@ describe("buildProviders — routing/swap point", () => {
     it.each(cases)(
         "routes $routing.brain + $routing.executor to the right factories",
         ({ routing, brain, engine }) => {
-            const built = buildProviders(routing);
+            const built = buildProviders(routing, DEPS);
             expect(built.brain.id).toBe(brain);
             expect(built.engine.id).toBe(engine);
         },
     );
 
     it("reflects each provider's capabilities", () => {
-        const { brain, engine } = buildProviders({
-            brain: "claude",
-            executor: "jules",
-        });
+        const { brain, engine } = buildProviders(
+            { brain: "claude", executor: "jules" },
+            DEPS,
+        );
         expect(brain.caps.thinking).toBe(true);
         expect(engine.caps.streaming).toBe(false); // Jules polls
         expect(engine.caps.planApproval).toBe(true);
@@ -63,39 +77,46 @@ describe("buildProviders — routing/swap point", () => {
     });
 });
 
-describe("Phase 0 stubs throw NotImplementedError on use", () => {
-    it("Brain.generate throws", () => {
-        const { brain } = buildProviders({
-            brain: "claude",
-            executor: "jules",
-        });
+describe("Jules engine is real and wired", () => {
+    it("builds a Jules engine with the right id and caps", () => {
+        const { engine } = buildProviders(
+            { brain: "claude", executor: "jules" },
+            DEPS,
+        );
+        expect(engine.id).toBe("jules");
+        expect(engine.caps.vcs).toEqual(["github"]);
+        expect(engine.deepLink("abc")).toBe(
+            "https://jules.google/sessions/abc",
+        );
+    });
+
+    it("requires deps.jules to build the Jules engine", () => {
+        expect(() =>
+            buildProviders({ brain: "claude", executor: "jules" }),
+        ).toThrow(/Jules engine requires deps\.jules/);
+    });
+});
+
+describe("Brain & sandbox stubs throw NotImplementedError on use", () => {
+    it("Claude brain.generate throws with a descriptive message", () => {
+        const { brain } = buildProviders(
+            { brain: "claude", executor: "jules" },
+            DEPS,
+        );
         expect(() => brain.generate({ messages: [], tools: [] })).toThrow(
             NotImplementedError,
+        );
+        expect(() => brain.generate({ messages: [], tools: [] })).toThrow(
+            /ClaudeBrain\.generate is not implemented yet/,
         );
     });
 
     it("Gemini brain.generate throws", () => {
-        const { brain } = buildProviders({
-            brain: "gemini",
-            executor: "jules",
-        });
-        expect(() => brain.generate({ messages: [], tools: [] })).toThrow();
-    });
-
-    it("every Engine method throws (Jules)", () => {
-        const { engine } = buildProviders({
-            brain: "claude",
-            executor: "jules",
-        });
-        expect(() => engine.start({ repo: REPO, prompt: "go" }, CRED)).toThrow(
-            NotImplementedError,
+        const { brain } = buildProviders(
+            { brain: "gemini", executor: "jules" },
+            DEPS,
         );
-        expect(() => engine.sendMessage("ref", "hi", CRED)).toThrow();
-        expect(() => engine.listActivities("ref")).toThrow();
-        expect(() => engine.getStatus("ref")).toThrow();
-        expect(() => engine.approvePlan?.("ref", CRED)).toThrow();
-        expect(() => engine.getResult("ref")).toThrow();
-        expect(() => engine.deepLink("ref")).toThrow();
+        expect(() => brain.generate({ messages: [], tools: [] })).toThrow();
     });
 
     it("sandbox engine methods throw and it has no approvePlan", () => {
@@ -107,21 +128,9 @@ describe("Phase 0 stubs throw NotImplementedError on use", () => {
         expect(() =>
             engine.start({ repo: REPO, prompt: "go" }, CRED),
         ).toThrow();
-        expect(() => engine.sendMessage("ref", "hi", CRED)).toThrow();
         expect(() => engine.listActivities("ref")).toThrow();
         expect(() => engine.getStatus("ref")).toThrow();
-        expect(() => engine.getResult("ref")).toThrow();
         expect(() => engine.deepLink("ref")).toThrow();
-    });
-
-    it("carries a descriptive message", () => {
-        const { brain } = buildProviders({
-            brain: "claude",
-            executor: "jules",
-        });
-        expect(() => brain.generate({ messages: [], tools: [] })).toThrow(
-            /ClaudeBrain\.generate is not implemented yet/,
-        );
     });
 });
 

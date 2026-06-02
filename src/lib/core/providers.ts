@@ -1,3 +1,4 @@
+import { createJulesEngine, type JulesDeps } from "@/lib/adapters/jules";
 import type {
     ConversationProvider,
     ExecutionEngine,
@@ -24,9 +25,18 @@ const notImplemented = (what: string): never => {
     throw new NotImplementedError(what);
 };
 
-// Deps the real factories will capture (HTTP clients, creds, clock, …). Empty
-// for the stubs; typed loosely so the signatures are stable as deps grow.
-export type ProviderDeps = Record<string, unknown>;
+// Deps the factories capture (HTTP clients, creds, clock, …). Grows per
+// provider as adapters become real; Brain/sandbox stubs ignore it for now.
+export type ProviderDeps = { jules?: JulesDeps };
+
+const requireJules = (deps: ProviderDeps): JulesDeps => {
+    if (!deps.jules) {
+        throw new Error(
+            "Jules engine requires deps.jules { fetch, baseUrl, apiKey }",
+        );
+    }
+    return deps.jules;
+};
 
 // ── Brain stubs ───────────────────────────────────────────────────────────────
 
@@ -56,25 +66,7 @@ export const createGeminiBrain = (
     generate: () => notImplemented("GeminiBrain.generate"),
 });
 
-// ── Engine stubs ────────────────────────────────────────────────────────────────
-
-export const createJulesEngine = (_deps: ProviderDeps): ExecutionEngine => ({
-    id: "jules",
-    caps: {
-        conversational: true,
-        planApproval: true,
-        streaming: false, // poll
-        vcs: ["github"],
-        selfHosted: false,
-    },
-    start: () => notImplemented("JulesEngine.start"),
-    sendMessage: () => notImplemented("JulesEngine.sendMessage"),
-    listActivities: () => notImplemented("JulesEngine.listActivities"),
-    getStatus: () => notImplemented("JulesEngine.getStatus"),
-    approvePlan: () => notImplemented("JulesEngine.approvePlan"),
-    getResult: () => notImplemented("JulesEngine.getResult"),
-    deepLink: () => notImplemented("JulesEngine.deepLink"),
-});
+// ── Engine stubs (Jules is real — see src/lib/adapters/jules) ─────────────────────
 
 type SandboxHarness = { harness: "claude" | "gemini" };
 
@@ -114,7 +106,7 @@ const engineFactories: Record<
     ExecutorId,
     (deps: ProviderDeps) => ExecutionEngine
 > = {
-    jules: (deps) => createJulesEngine(deps),
+    jules: (deps) => createJulesEngine(requireJules(deps)),
     "sandbox-claude": (deps) =>
         createSandboxEngine({ harness: "claude" }, deps),
     "sandbox-gemini": (deps) =>

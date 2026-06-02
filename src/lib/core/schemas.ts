@@ -297,3 +297,27 @@ export const Activity = z.object({
     cursor: z.string(),
 });
 export type Activity = z.infer<typeof Activity>;
+
+/**
+ * The engine-facing activity an `ExecutionEngine` emits — vendor-normalized but
+ * not yet tied to one of our `Execution` rows (the poller adds `executionId`
+ * and the monotonic `seq` when it persists). `cursor` is the vendor-side
+ * position the poller advances on. `at` is a raw vendor timestamp string (kept
+ * permissive — engines vary in precision/offset).
+ */
+export const NormalizedActivity = z.object({
+    at: z.string(),
+    source: z.enum(["agent", "user", "system"]),
+    kind: z.enum([
+        "plan",
+        "message",
+        "code_change",
+        "tool",
+        "progress",
+        "result",
+    ]),
+    text: z.string().optional(),
+    data: z.unknown().optional(),
+    cursor: z.string(),
+});
+export type NormalizedActivity = z.infer<typeof NormalizedActivity>;
