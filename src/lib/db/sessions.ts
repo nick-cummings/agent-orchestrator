@@ -16,6 +16,17 @@ export const getSessionByCard = async (
     return session;
 };
 
+export const getSessionById = async (
+    db: Db,
+    id: string,
+): Promise<Session | undefined> => {
+    const [session] = await db
+        .select()
+        .from(sessions)
+        .where(eq(sessions.id, id));
+    return session;
+};
+
 /**
  * A card has exactly one session; create it on first use. Routing and other
  * fields fall back to the schema column defaults (claude/jules) for now —

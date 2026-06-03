@@ -63,6 +63,20 @@ export const updateCard = async (
     return updated;
 };
 
+/** Mirror an execution's lifecycle onto the card face (board-view status). */
+export const setCardStatus = async (
+    db: Db,
+    id: string,
+    status: string,
+): Promise<Card | undefined> => {
+    const [updated] = await db
+        .update(cards)
+        .set({ status })
+        .where(eq(cards.id, id))
+        .returning();
+    return updated;
+};
+
 /** Move a card between/within columns (re-status or reorder). */
 export const moveCard = async (
     db: Db,
