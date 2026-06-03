@@ -47,3 +47,23 @@ export const MoveCardBody = z.object({
     position: z.number(),
 });
 export type MoveCardBody = z.infer<typeof MoveCardBody>;
+
+/** Repo a card's execution targets (Phase 1 — no Connections UI yet). */
+export const RepoTarget = z.object({
+    owner: z.string().min(1),
+    name: z.string().min(1),
+    branch: z.string().min(1),
+});
+export type RepoTarget = z.infer<typeof RepoTarget>;
+
+/** Start a cloud coding task (Execution) on a card. */
+export const StartExecutionBody = z.object({
+    prompt: z.string().min(1),
+    repo: RepoTarget,
+    requirePlanApproval: z.boolean().optional(),
+});
+export type StartExecutionBody = z.infer<typeof StartExecutionBody>;
+
+/** Steer a running execution. */
+export const SendMessageBody = z.object({ text: z.string().min(1) });
+export type SendMessageBody = z.infer<typeof SendMessageBody>;

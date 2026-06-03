@@ -3,13 +3,16 @@ import type {
     CreateCardBody,
     CreateColumnBody,
     MoveCardBody,
+    StartExecutionBody,
     UpdateCardBody,
     UpdateColumnBody,
 } from "@/lib/api/requests";
 import type { Board } from "@/lib/db/boards";
 import type { BoardView } from "@/lib/db/boardView";
+import type { CardSessionView } from "@/lib/db/cardSession";
 import type { Card } from "@/lib/db/cards";
 import type { Column } from "@/lib/db/columns";
+import type { Execution } from "@/lib/db/executions";
 
 /**
  * Typed fetch wrappers over the kanban API — the single seam between the React
@@ -72,3 +75,24 @@ export const moveCard = (id: string, body: MoveCardBody): Promise<Card> =>
 
 export const deleteCard = (id: string): Promise<void> =>
     send("DELETE", `/api/cards/${id}`);
+
+// ── Executions (Phase 1) ──────────────────────────────────────────────────────
+
+export const fetchCardSession = (cardId: string): Promise<CardSessionView> =>
+    send("GET", `/api/cards/${cardId}/session`);
+
+export const startExecution = (
+    cardId: string,
+    body: StartExecutionBody,
+): Promise<Execution> => send("POST", `/api/cards/${cardId}/executions`, body);
+
+export const sendExecutionMessage = (
+    executionId: string,
+    text: string,
+): Promise<{ ok: boolean }> =>
+    send("POST", `/api/executions/${executionId}/messages`, { text });
+
+export const approveExecutionPlan = (
+    executionId: string,
+): Promise<{ ok: boolean }> =>
+    send("POST", `/api/executions/${executionId}/approve-plan`, {});
