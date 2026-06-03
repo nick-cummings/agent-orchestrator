@@ -93,4 +93,11 @@ describe("KanbanColumn", () => {
         await userEvent.click(screen.getByLabelText("Delete First"));
         expect(handlers.onDeleteCard).toHaveBeenCalledWith("c1");
     });
+
+    it("links each card to its session view", () => {
+        renderColumn();
+        expect(
+            screen.getByRole("link", { name: "Open First" }),
+        ).toHaveAttribute("href", "/card/c1");
+    });
 });

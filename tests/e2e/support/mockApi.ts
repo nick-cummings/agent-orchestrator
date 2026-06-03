@@ -70,6 +70,10 @@ export const installMockApi = async (
         if (resource === "boards" && method === "GET" && id)
             return json(route, view());
 
+        // Card session read model — empty (no execution started in E2E).
+        if (resource === "cards" && action === "session" && method === "GET")
+            return json(route, { session: null, executions: [] });
+
         if (resource === "cards" && method === "POST" && !id) {
             const col = columns.find((c) => c.id === body?.columnId);
             if (!col) return json(route, { error: "no column" }, 404);

@@ -15,14 +15,13 @@ It's a thin, opinionated orchestration layer over two **swappable** roles — a
 conversational **Brain** and a cloud execution **Engine**. Not a better model or
 a better agent; a far better way to _manage many agents at once_.
 
-> **Status: Phase 0 nearly complete.** The Next.js app is scaffolded with the
-> full verification gate (Prettier, type-checked ESLint, Vitest with enforced
-> coverage thresholds, Playwright E2E). The domain contracts, Zod schemas,
-> config-inheritance merge, and Drizzle persistence are in place, and the
-> **static kanban** — boards/columns/cards CRUD with drag-to-reorder — is wired
-> end-to-end (REST routes, React Query, dnd-kit). See
-> [`docs/features/kanban.md`](./docs/features/kanban.md) and
-> [Roadmap](#roadmap).
+> **Status: Phase 1 complete.** On top of the Phase-0 static kanban, a card can
+> now launch a **Jules** cloud coding task and watch it stream — plan →
+> progress → PR — via a server-side poller, a Redis/SSE realtime path, and a
+> card session view (no Brain yet). The Jules adapter is built to the v1alpha
+> docs + Zod-validated fixtures (set `JULES_API_KEY` to go live). See
+> [`docs/features/executions.md`](./docs/features/executions.md), the
+> [runbook](./docs/operations/poller-and-realtime.md), and [Roadmap](#roadmap).
 
 ## The idea
 
@@ -144,14 +143,14 @@ PR. Tool configs live in [`.config/`](./.config); only resolver-pinned files
 
 ## Roadmap
 
-| Phase | Deliverable                                                                                                              |
-| ----- | ------------------------------------------------------------------------------------------------------------------------ |
-| **0** | Contracts & skeleton — contract types, Zod schemas, `buildProviders` stubs, Next.js app + Postgres + static kanban CRUD. |
-| **1** | Jules Engine, no Brain — a working computer-off cloud-agent kanban on Jules alone.                                       |
-| **2** | Claude Brain + agent loop — full hybrid; Engine exposed as tools; `ApprovalPolicy` gate.                                 |
-| **3** | Connections, settings inheritance & multi-account — _the differentiator_.                                                |
-| **4** | PWA polish + computer-off UX — installable, web-push, deep links.                                                        |
-| **5** | Prove the swap (future) — `createSandboxEngine` (Claude-only), `createGeminiBrain` (Gemini-only).                        |
+| Phase    | Deliverable                                                                                                              |
+| -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **0 ✅** | Contracts & skeleton — contract types, Zod schemas, `buildProviders` stubs, Next.js app + Postgres + static kanban CRUD. |
+| **1 ✅** | Jules Engine, no Brain — adapter + poller + SSE/Redis + card session view; computer-off cloud-agent kanban on Jules.     |
+| **2**    | Claude Brain + agent loop — full hybrid; Engine exposed as tools; `ApprovalPolicy` gate.                                 |
+| **3**    | Connections, settings inheritance & multi-account — _the differentiator_.                                                |
+| **4**    | PWA polish + computer-off UX — installable, web-push, deep links.                                                        |
+| **5**    | Prove the swap (future) — `createSandboxEngine` (Claude-only), `createGeminiBrain` (Gemini-only).                        |
 
 ## Contributing
 

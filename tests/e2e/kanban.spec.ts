@@ -49,6 +49,14 @@ test.beforeEach(async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Demo" })).toBeVisible();
 });
 
+test("opens a card's session view from the board", async ({ page }) => {
+    await column(page, "Todo").getByRole("link", { name: "Open A" }).click();
+    await expect(page).toHaveURL(/\/card\/a$/);
+    await expect(
+        page.getByRole("button", { name: "Start task" }),
+    ).toBeVisible();
+});
+
 test("renders the seeded columns and cards", async ({ page }) => {
     await expect(
         column(page, "Todo").getByText("A", { exact: true }),

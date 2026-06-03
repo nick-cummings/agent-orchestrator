@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import Link from "next/link";
 import { useState } from "react";
 
 import type { Card } from "@/lib/db/cards";
@@ -78,6 +79,13 @@ export const KanbanCard = ({ card, onRename, onDelete }: KanbanCardProps) => {
                     {card.title}
                 </span>
             )}
+            <Link
+                href={`/card/${card.id}`}
+                aria-label={`Open ${card.title}`}
+                className="shrink-0 rounded px-1 text-xs text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+                ↗
+            </Link>
             <button
                 type="button"
                 aria-label={`Delete ${card.title}`}
