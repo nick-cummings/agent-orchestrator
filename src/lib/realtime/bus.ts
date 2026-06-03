@@ -1,11 +1,12 @@
 import type { SessionEvent } from "@/lib/realtime/events";
+import { createEventQueue, type EventQueue } from "@/lib/realtime/queue";
 
 /**
  * The realtime pub/sub seam between the poller (publisher) and the SSE endpoint
  * (subscriber). `subscribe` yields events published to `channel` (a session id)
  * after subscription; pass an `AbortSignal` to end the stream on disconnect.
- * The in-memory impl below serves tests and single-process dev; a Redis-backed
- * impl (Increment 4) is selected in prod.
+ * The in-memory impl below serves tests and single-process dev; the Redis impl
+ * (redisBus.ts) is selected in prod via `getBus` (index.ts).
  */
 export type EventBus = {
     publish: (channel: string, event: SessionEvent) => Promise<void>;
@@ -15,81 +16,27 @@ export type EventBus = {
     ) => AsyncIterable<SessionEvent>;
 };
 
-type Listener = (event: SessionEvent) => void;
-
-/** Process-local bus: a per-channel listener set, each subscriber draining its
- *  own queue. Lossless for events published while subscribed; no replay (the
- *  SSE endpoint replays missed events from Postgres). */
+/** Process-local bus: a per-channel set of subscriber queues. Lossless for
+ *  events published while subscribed; no replay (the SSE endpoint replays
+ *  missed events from Postgres). */
 export const createInMemoryBus = (): EventBus => {
-    const channels = new Map<string, Set<Listener>>();
+    const channels = new Map<string, Set<EventQueue>>();
 
     return {
         publish: (channel, event) => {
-            for (const listener of channels.get(channel) ?? []) listener(event);
+            for (const queue of channels.get(channel) ?? []) queue.push(event);
             return Promise.resolve();
         },
 
         subscribe: (channel, signal) => {
-            const queue: SessionEvent[] = [];
-            let pending: ((r: IteratorResult<SessionEvent>) => void) | null =
-                null;
-            let closed = false;
-
-            const listener: Listener = (event) => {
-                if (pending) {
-                    pending({ value: event, done: false });
-                    pending = null;
-                } else {
-                    queue.push(event);
-                }
-            };
-
-            const set = channels.get(channel) ?? new Set<Listener>();
-            set.add(listener);
+            const set = channels.get(channel) ?? new Set<EventQueue>();
             channels.set(channel, set);
-
-            const close = () => {
-                if (closed) return;
-                closed = true;
-                set.delete(listener);
-                if (pending) {
-                    pending({ value: undefined, done: true });
-                    pending = null;
-                }
-            };
-            signal?.addEventListener("abort", close);
-
-            return {
-                [Symbol.asyncIterator]: () => ({
-                    next: () => {
-                        const queued = queue.shift();
-                        if (queued !== undefined) {
-                            return Promise.resolve({
-                                value: queued,
-                                done: false,
-                            });
-                        }
-                        if (closed) {
-                            return Promise.resolve({
-                                value: undefined,
-                                done: true,
-                            });
-                        }
-                        return new Promise<IteratorResult<SessionEvent>>(
-                            (resolve) => {
-                                pending = resolve;
-                            },
-                        );
-                    },
-                    return: () => {
-                        close();
-                        return Promise.resolve({
-                            value: undefined,
-                            done: true,
-                        });
-                    },
-                }),
-            };
+            const queue = createEventQueue(() => set.delete(queue));
+            set.add(queue);
+            signal?.addEventListener("abort", () => {
+                queue.close();
+            });
+            return queue.iterable;
         },
     };
 };

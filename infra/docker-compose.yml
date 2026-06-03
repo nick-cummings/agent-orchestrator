@@ -1,7 +1,8 @@
-# Local dev Postgres for the Orchestrator kanban.
+# Local dev Postgres + Redis for the Orchestrator.
 #   docker compose -f infra/docker-compose.yml up -d
-# Then point the app at it via DATABASE_URL (see .env.example) and run
-# `npm run db:migrate`. Tests do NOT need this — they use in-process PGlite.
+# Point the app at them via DATABASE_URL + REDIS_URL (see .env.example) and run
+# `npm run db:migrate`. Tests do NOT need this — they use in-process PGlite and
+# the in-memory event bus (Redis is only used when REDIS_URL is set).
 services:
     postgres:
         image: postgres:17-alpine
@@ -16,6 +17,17 @@ services:
             - orchestrator-pgdata:/var/lib/postgresql/data
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U orchestrator"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    redis:
+        image: redis:7-alpine
+        container_name: orchestrator-redis
+        ports:
+            - "6379:6379"
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
             interval: 5s
             timeout: 5s
             retries: 5
