@@ -5,16 +5,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ActivityFeed } from "@/components/card/ActivityFeed";
-import { StartTaskForm } from "@/components/card/StartTaskForm";
+import { ApprovalPrompt } from "@/components/card/ApprovalPrompt";
+import { Chat } from "@/components/card/Chat";
 import * as api from "@/lib/api/client";
-import type { StartExecutionBody } from "@/lib/api/requests";
 
 /**
- * The card session view: shows the card's latest Execution and its live
- * activity feed, or a StartTaskForm when there's none. Reads the card-session
- * model via React Query and refreshes it on any SSE event (the stream is a
- * "something changed" signal; the read model is the source of truth). Steering
- * and plan-approval post back through the API.
+ * The card session view: a Claude conversation that drives Jules. Reads the
+ * card-session model via React Query; the open SSE stream appends live `text`
+ * deltas as a streaming bubble and refetches the read model on every persisted
+ * `message`/state event (the model is the source of truth). The latest
+ * execution's status + activity feed render below the chat.
  */
 
 const STATUS: Partial<Record<string, { label: string; className: string }>> = {
@@ -31,8 +31,6 @@ const STATUS: Partial<Record<string, { label: string; className: string }>> = {
     cancelled: { label: "Cancelled", className: "text-muted" },
 };
 
-const TERMINAL = new Set(["succeeded", "failed", "cancelled"]);
-
 export const CardView = ({ cardId }: { cardId: string }) => {
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -40,47 +38,63 @@ export const CardView = ({ cardId }: { cardId: string }) => {
         queryKey: ["card-session", cardId],
         queryFn: () => api.fetchCardSession(cardId),
     });
-    const refresh = () =>
-        queryClient.invalidateQueries({ queryKey: ["card-session", cardId] });
+    const [streamingText, setStreamingText] = useState("");
 
-    const start = useMutation({
-        mutationFn: (body: StartExecutionBody) =>
-            api.startExecution(cardId, body),
-        onSuccess: refresh,
+    const send = useMutation({
+        mutationFn: (text: string) => api.sendChatMessage(cardId, text),
+        onSettled: () =>
+            queryClient.invalidateQueries({
+                queryKey: ["card-session", cardId],
+            }),
     });
-    const steer = useMutation({
-        mutationFn: (vars: { id: string; text: string }) =>
-            api.sendExecutionMessage(vars.id, vars.text),
-        onSuccess: refresh,
-    });
-    const approve = useMutation({
-        mutationFn: (id: string) => api.approveExecutionPlan(id),
-        onSuccess: refresh,
+    const decide = useMutation({
+        mutationFn: (vars: {
+            sessionId: string;
+            decision: "approve" | "reject";
+        }) => api.respondToApproval(vars.sessionId, vars.decision),
+        onSettled: () =>
+            queryClient.invalidateQueries({
+                queryKey: ["card-session", cardId],
+            }),
     });
 
     const sessionId = query.data?.session?.id;
     useEffect(() => {
         if (!sessionId) return;
         const source = new EventSource(`/api/sessions/${sessionId}/stream`);
-        const onEvent = () => {
+        const refetch = () => {
             void queryClient.invalidateQueries({
                 queryKey: ["card-session", cardId],
             });
         };
-        source.addEventListener("activity", onEvent);
-        source.addEventListener("state", onEvent);
+        const onText = (event: Event) => {
+            const data = JSON.parse((event as MessageEvent<string>).data) as {
+                text: string;
+            };
+            setStreamingText((prev) => prev + data.text);
+        };
+        const onSettled = () => {
+            setStreamingText("");
+            refetch();
+        };
+        source.addEventListener("text", onText);
+        source.addEventListener("message", onSettled);
+        source.addEventListener("turn_end", onSettled);
+        source.addEventListener("approval_request", refetch);
+        source.addEventListener("activity", refetch);
+        source.addEventListener("state", refetch);
         return () => {
             source.close();
         };
     }, [sessionId, cardId, queryClient]);
 
-    const [steerText, setSteerText] = useState("");
-
     if (query.isPending) return <p className="p-6 text-muted">Loading…</p>;
     if (query.isError)
         return <p className="p-6 text-muted">Could not load this card.</p>;
 
-    const current = query.data.executions.at(-1);
+    const data = query.data;
+    const session = data.session;
+    const current = data.executions.at(-1);
 
     return (
         <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-6">
@@ -94,15 +108,27 @@ export const CardView = ({ cardId }: { cardId: string }) => {
                 ← Back
             </button>
 
-            {!current ? (
-                <StartTaskForm
-                    pending={start.isPending}
-                    onStart={(body) => {
-                        start.mutate(body);
+            <Chat
+                messages={data.messages}
+                streamingText={streamingText}
+                pending={send.isPending}
+                onSend={(text) => {
+                    send.mutate(text);
+                }}
+            />
+
+            {session?.pendingApproval && (
+                <ApprovalPrompt
+                    pending={session.pendingApproval}
+                    busy={decide.isPending}
+                    onDecide={(decision) => {
+                        decide.mutate({ sessionId: session.id, decision });
                     }}
                 />
-            ) : (
-                <section className="flex flex-col gap-4">
+            )}
+
+            {current && (
+                <section className="flex flex-col gap-2 border-t border-line pt-3">
                     <header className="flex flex-wrap items-center gap-3">
                         <span
                             className={`text-sm font-medium ${STATUS[current.state]?.className ?? "text-muted"}`}
@@ -128,54 +154,7 @@ export const CardView = ({ cardId }: { cardId: string }) => {
                             </a>
                         )}
                     </header>
-
-                    <p className="text-sm text-muted">{current.prompt}</p>
-
-                    {current.state === "awaiting_plan_approval" && (
-                        <button
-                            type="button"
-                            disabled={approve.isPending}
-                            onClick={() => {
-                                approve.mutate(current.id);
-                            }}
-                            className="self-start rounded-md bg-accent px-3 py-1.5 text-sm text-accent-foreground disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                        >
-                            Approve plan
-                        </button>
-                    )}
-
                     <ActivityFeed activities={current.activities} />
-
-                    {!TERMINAL.has(current.state) && (
-                        <form
-                            className="flex gap-2"
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                if (steerText.trim().length === 0) return;
-                                steer.mutate({
-                                    id: current.id,
-                                    text: steerText.trim(),
-                                });
-                                setSteerText("");
-                            }}
-                        >
-                            <input
-                                aria-label="Send guidance"
-                                value={steerText}
-                                placeholder="Send guidance to Jules…"
-                                onChange={(e) => {
-                                    setSteerText(e.target.value);
-                                }}
-                                className="flex-1 rounded-md border border-line bg-card px-2 py-1.5 text-sm text-primary focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                            />
-                            <button
-                                type="submit"
-                                className="rounded-md border border-line px-3 text-sm text-primary hover:border-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                            >
-                                Send
-                            </button>
-                        </form>
-                    )}
                 </section>
             )}
         </main>
