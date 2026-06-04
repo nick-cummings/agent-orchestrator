@@ -15,6 +15,13 @@
             "when": 1780352209476,
             "tag": "0001_lowly_sphinx",
             "breakpoints": true
+        },
+        {
+            "idx": 2,
+            "version": "7",
+            "when": 1780602455419,
+            "tag": "0002_odd_risque",
+            "breakpoints": true
         }
     ]
 }

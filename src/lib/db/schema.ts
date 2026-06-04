@@ -9,7 +9,15 @@ import {
     uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import type { Config, RepoRef } from "@/lib/core/schemas";
+import type { ContentBlock, Config, RepoRef } from "@/lib/core/schemas";
+
+/** A tool call paused at the approval gate, awaiting a human tap (Phase 2). */
+export type PendingApproval = {
+    toolCallId: string;
+    name: string;
+    input: unknown;
+    category: string;
+};
 
 /**
  * Drizzle schema for the Phase 0 organizational kanban (boards → columns →
@@ -85,6 +93,8 @@ export const sessions = pgTable("sessions", {
     requirePlanApproval: boolean("require_plan_approval")
         .notNull()
         .default(true),
+    // A Brain tool call paused at the approval gate (Phase 2), or null.
+    pendingApproval: jsonb("pending_approval").$type<PendingApproval>(),
     lastActiveAt: ts("last_active_at").notNull().defaultNow(),
     createdAt: ts("created_at").notNull().defaultNow(),
 });
@@ -128,4 +138,27 @@ export const activities = pgTable(
         cursor: text("cursor").notNull(),
     },
     (t) => [uniqueIndex("activities_execution_seq").on(t.executionId, t.seq)],
+);
+
+/**
+ * The Brain conversation transcript per session. `seq` is monotonic per session
+ * and powers SSE replay; `contentBlocks` holds the normalized domain blocks
+ * (text / thinking / tool_call / tool_result / image / document).
+ */
+export const messages = pgTable(
+    "messages",
+    {
+        id: text("id").primaryKey(),
+        sessionId: text("session_id")
+            .notNull()
+            .references(() => sessions.id, { onDelete: "cascade" }),
+        role: text("role").notNull(),
+        contentBlocks: jsonb("content_blocks")
+            .$type<ContentBlock[]>()
+            .notNull()
+            .default([]),
+        seq: integer("seq").notNull(),
+        createdAt: ts("created_at").notNull().defaultNow(),
+    },
+    (t) => [uniqueIndex("messages_session_seq").on(t.sessionId, t.seq)],
 );

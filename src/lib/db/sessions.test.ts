@@ -5,7 +5,13 @@ import { createBoard } from "@/lib/db/boards";
 import { createCard } from "@/lib/db/cards";
 import type { Db } from "@/lib/db/client";
 import { createColumn } from "@/lib/db/columns";
-import { getOrCreateSessionForCard, getSessionByCard } from "@/lib/db/sessions";
+import {
+    clearPendingApproval,
+    getOrCreateSessionForCard,
+    getSessionByCard,
+    getSessionById,
+    setPendingApproval,
+} from "@/lib/db/sessions";
 import { must } from "@/test-utils/assert";
 import { createTestDb } from "@/test-utils/db";
 
@@ -48,5 +54,24 @@ describe("sessions repo", () => {
         const first = await getOrCreateSessionForCard(db, cardId);
         const second = await getOrCreateSessionForCard(db, cardId);
         expect(second.id).toBe(first.id);
+    });
+
+    it("parks and clears a pending approval", async () => {
+        const { id } = await getOrCreateSessionForCard(db, cardId);
+        await setPendingApproval(db, id, {
+            toolCallId: "t1",
+            name: "start_coding_task",
+            input: { repo: "o/r" },
+            category: "branch_write",
+        });
+        expect(
+            must(await getSessionById(db, id)).pendingApproval,
+        ).toMatchObject({
+            toolCallId: "t1",
+            name: "start_coding_task",
+        });
+
+        await clearPendingApproval(db, id);
+        expect(must(await getSessionById(db, id)).pendingApproval).toBeNull();
     });
 });

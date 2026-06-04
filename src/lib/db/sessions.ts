@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import type { Db } from "@/lib/db/client";
-import { sessions } from "@/lib/db/schema";
+import { type PendingApproval, sessions } from "@/lib/db/schema";
 
 export type Session = typeof sessions.$inferSelect;
 
@@ -25,6 +25,28 @@ export const getSessionById = async (
         .from(sessions)
         .where(eq(sessions.id, id));
     return session;
+};
+
+/** Park a Brain tool call at the approval gate (Phase 2 persist-and-resume). */
+export const setPendingApproval = async (
+    db: Db,
+    sessionId: string,
+    pending: PendingApproval,
+): Promise<void> => {
+    await db
+        .update(sessions)
+        .set({ pendingApproval: pending })
+        .where(eq(sessions.id, sessionId));
+};
+
+export const clearPendingApproval = async (
+    db: Db,
+    sessionId: string,
+): Promise<void> => {
+    await db
+        .update(sessions)
+        .set({ pendingApproval: null })
+        .where(eq(sessions.id, sessionId));
 };
 
 /**
