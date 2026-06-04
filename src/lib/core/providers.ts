@@ -1,3 +1,4 @@
+import { createClaudeBrain, type ClaudeDeps } from "@/lib/adapters/claude";
 import { createJulesEngine, type JulesDeps } from "@/lib/adapters/jules";
 import type {
     ConversationProvider,
@@ -27,7 +28,7 @@ const notImplemented = (what: string): never => {
 
 // Deps the factories capture (HTTP clients, creds, clock, …). Grows per
 // provider as adapters become real; Brain/sandbox stubs ignore it for now.
-export type ProviderDeps = { jules?: JulesDeps };
+export type ProviderDeps = { jules?: JulesDeps; claude?: ClaudeDeps };
 
 const requireJules = (deps: ProviderDeps): JulesDeps => {
     if (!deps.jules) {
@@ -38,20 +39,14 @@ const requireJules = (deps: ProviderDeps): JulesDeps => {
     return deps.jules;
 };
 
-// ── Brain stubs ───────────────────────────────────────────────────────────────
+const requireClaude = (deps: ProviderDeps): ClaudeDeps => {
+    if (!deps.claude) {
+        throw new Error("Claude brain requires deps.claude { client }");
+    }
+    return deps.claude;
+};
 
-export const createClaudeBrain = (
-    _deps: ProviderDeps,
-): ConversationProvider => ({
-    id: "claude",
-    caps: {
-        streaming: true,
-        thinking: true,
-        parallelToolCalls: true,
-        maxContextTokens: 200_000,
-    },
-    generate: () => notImplemented("ClaudeBrain.generate"),
-});
+// ── Brain stubs (Claude is real — see src/lib/adapters/claude) ────────────────────
 
 export const createGeminiBrain = (
     _deps: ProviderDeps,
@@ -98,7 +93,7 @@ const brainFactories: Record<
     BrainId,
     (deps: ProviderDeps) => ConversationProvider
 > = {
-    claude: createClaudeBrain,
+    claude: (deps) => createClaudeBrain(requireClaude(deps)),
     gemini: createGeminiBrain,
 };
 

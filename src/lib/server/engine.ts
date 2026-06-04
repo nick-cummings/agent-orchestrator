@@ -1,23 +1,19 @@
+import { createJulesEngine } from "@/lib/adapters/jules";
 import type { ExecutionEngine } from "@/lib/core/contracts";
-import { buildProviders } from "@/lib/core/providers";
 import { resolveJulesCredential } from "@/lib/creds/jules";
 
 /**
- * Server-side composition: build the configured ExecutionEngine from env. The
- * routing is hard-wired to Jules in Phase 1 (Phase 3 reads it from the card's
- * effective config). Deps carry the Jules base URL + the resolved API key.
+ * Server-side composition of the Engine from env (mirrors `getBrain`). Hard-wired
+ * to Jules in Phase 2 (Phase 3 reads routing from the card config). Built
+ * directly rather than via `buildProviders` so it needs no Brain deps — the two
+ * server helpers compose their own side.
  */
 const JULES_BASE_URL =
     process.env.JULES_BASE_URL ?? "https://jules.googleapis.com/v1alpha";
 
 export const getEngine = (): ExecutionEngine =>
-    buildProviders(
-        { brain: "claude", executor: "jules" },
-        {
-            jules: {
-                fetch,
-                baseUrl: JULES_BASE_URL,
-                apiKey: resolveJulesCredential().value,
-            },
-        },
-    ).engine;
+    createJulesEngine({
+        fetch,
+        baseUrl: JULES_BASE_URL,
+        apiKey: resolveJulesCredential().value,
+    });

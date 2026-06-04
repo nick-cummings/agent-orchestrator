@@ -15,14 +15,15 @@ const REPO = {
     branch: "main",
 };
 
-// The real Jules engine needs injected deps; a never-called fetch suffices for
-// wiring tests (no method is invoked here).
+// The real Jules engine + Claude brain need injected deps; never-called stubs
+// suffice for wiring tests (no method is invoked here).
 const DEPS: ProviderDeps = {
     jules: {
         fetch: vi.fn() as unknown as typeof fetch,
         baseUrl: "https://jules.example/v1alpha",
         apiKey: "k",
     },
+    claude: { client: {} as never },
 };
 
 describe("buildProviders — routing/swap point", () => {
@@ -68,10 +69,10 @@ describe("buildProviders — routing/swap point", () => {
         expect(engine.caps.streaming).toBe(false); // Jules polls
         expect(engine.caps.planApproval).toBe(true);
 
-        const sandbox = buildProviders({
-            brain: "claude",
-            executor: "sandbox-claude",
-        }).engine;
+        const sandbox = buildProviders(
+            { brain: "claude", executor: "sandbox-claude" },
+            DEPS,
+        ).engine;
         expect(sandbox.caps.streaming).toBe(true);
         expect(sandbox.caps.selfHosted).toBe(true);
     });
@@ -92,31 +93,48 @@ describe("Jules engine is real and wired", () => {
 
     it("requires deps.jules to build the Jules engine", () => {
         expect(() =>
-            buildProviders({ brain: "claude", executor: "jules" }),
+            buildProviders(
+                { brain: "claude", executor: "jules" },
+                {
+                    claude: DEPS.claude,
+                },
+            ),
         ).toThrow(/Jules engine requires deps\.jules/);
     });
 });
 
-describe("Brain & sandbox stubs throw NotImplementedError on use", () => {
-    it("Claude brain.generate throws with a descriptive message", () => {
+describe("Claude brain is real and wired", () => {
+    it("builds a Claude brain with the right id and caps", () => {
         const { brain } = buildProviders(
             { brain: "claude", executor: "jules" },
+            DEPS,
+        );
+        expect(brain.id).toBe("claude");
+        expect(brain.caps.thinking).toBe(true);
+        expect(brain.caps.streaming).toBe(true);
+    });
+
+    it("requires deps.claude to build the Claude brain", () => {
+        expect(() =>
+            buildProviders(
+                { brain: "claude", executor: "jules" },
+                {
+                    jules: DEPS.jules,
+                },
+            ),
+        ).toThrow(/Claude brain requires deps\.claude/);
+    });
+});
+
+describe("Brain & sandbox stubs throw NotImplementedError on use", () => {
+    it("Gemini brain.generate throws NotImplementedError", () => {
+        const { brain } = buildProviders(
+            { brain: "gemini", executor: "jules" },
             DEPS,
         );
         expect(() => brain.generate({ messages: [], tools: [] })).toThrow(
             NotImplementedError,
         );
-        expect(() => brain.generate({ messages: [], tools: [] })).toThrow(
-            /ClaudeBrain\.generate is not implemented yet/,
-        );
-    });
-
-    it("Gemini brain.generate throws", () => {
-        const { brain } = buildProviders(
-            { brain: "gemini", executor: "jules" },
-            DEPS,
-        );
-        expect(() => brain.generate({ messages: [], tools: [] })).toThrow();
     });
 
     it("sandbox engine methods throw and it has no approvePlan", () => {
