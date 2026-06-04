@@ -15,12 +15,12 @@ It's a thin, opinionated orchestration layer over two **swappable** roles — a
 conversational **Brain** and a cloud execution **Engine**. Not a better model or
 a better agent; a far better way to _manage many agents at once_.
 
-> **Status: Phase 1 complete.** On top of the Phase-0 static kanban, a card can
-> now launch a **Jules** cloud coding task and watch it stream — plan →
-> progress → PR — via a server-side poller, a Redis/SSE realtime path, and a
-> card session view (no Brain yet). The Jules adapter is built to the v1alpha
-> docs + Zod-validated fixtures (set `JULES_API_KEY` to go live). See
-> [`docs/features/executions.md`](./docs/features/executions.md), the
+> **Status: Phase 2 complete.** A card is now a **Claude conversation that drives
+> Jules**: you chat, Claude calls engine tools (start/steer/check/approve/result)
+> through a provider-agnostic agent loop, narrating progress and pausing at an
+> approval gate (persist-and-resume). Built on the Phase-1 poller + Redis/SSE
+> realtime. Set `ANTHROPIC_API_KEY` + `JULES_API_KEY` to go live. See
+> [`docs/features/brain-chat.md`](./docs/features/brain-chat.md), the
 > [runbook](./docs/operations/poller-and-realtime.md), and [Roadmap](#roadmap).
 
 ## The idea
@@ -147,7 +147,7 @@ PR. Tool configs live in [`.config/`](./.config); only resolver-pinned files
 | -------- | ------------------------------------------------------------------------------------------------------------------------ |
 | **0 ✅** | Contracts & skeleton — contract types, Zod schemas, `buildProviders` stubs, Next.js app + Postgres + static kanban CRUD. |
 | **1 ✅** | Jules Engine, no Brain — adapter + poller + SSE/Redis + card session view; computer-off cloud-agent kanban on Jules.     |
-| **2**    | Claude Brain + agent loop — full hybrid; Engine exposed as tools; `ApprovalPolicy` gate.                                 |
+| **2 ✅** | Claude Brain + agent loop — full hybrid; chat UI; Engine exposed as tools; `ApprovalPolicy` gate (persist-and-resume).   |
 | **3**    | Connections, settings inheritance & multi-account — _the differentiator_.                                                |
 | **4**    | PWA polish + computer-off UX — installable, web-push, deep links.                                                        |
 | **5**    | Prove the swap (future) — `createSandboxEngine` (Claude-only), `createGeminiBrain` (Gemini-only).                        |

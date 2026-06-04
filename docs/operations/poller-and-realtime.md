@@ -30,6 +30,25 @@ npm run dev
     (omit auth when `CRON_SECRET` is unset). Or open a card — the SSE stream shows
     whatever the poller has persisted.
 
+## Going live with the Brain (Phase 2)
+
+The card chat is Claude driving Jules. The SDK resolves auth from the env — set
+`ANTHROPIC_API_KEY` in `.env.local` (or `ANTHROPIC_AUTH_TOKEN` for the
+subscription path; set only one). `JULES_API_KEY` is still required (Claude
+calls the Jules tools).
+
+Live check:
+
+1. `docker compose -f infra/docker-compose.yml up -d` (Postgres + Redis),
+   `npm run db:migrate`, `npm run dev`.
+2. Open a card → chat: _"Start a task on owner/repo to <do X>."_ Claude streams,
+   then calls `start_coding_task`.
+3. With `requirePlanApproval` on (default), the turn **pauses** at the approval
+   gate — the card shows tap-to-approve. Approve; the turn resumes, the task
+   starts, and the activity feed advances to a PR (drive the poller as below).
+4. Confirm persist-and-resume survives a reload: pause at approval, refresh the
+   page, approve — the parked call is in `sessions.pendingApproval` and resumes.
+
 ## Going live on Jules
 
 1. Get an API key from jules.google → settings; put it in `JULES_API_KEY`.

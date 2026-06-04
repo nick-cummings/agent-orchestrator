@@ -4,14 +4,14 @@ Operational guide for AI coding agents working in this repo. Read this first,
 then the three source docs it points to. If anything here conflicts with the
 source docs, the source docs win — and flag the conflict.
 
-> **Status: Phase 1 complete.** Phase 0 (contracts, Zod schemas, Drizzle
-> persistence, static kanban) plus Phase 1: the real **Jules** `ExecutionEngine`
-> (`src/lib/adapters/jules/`), the poller (`src/lib/poller/`), the SSE/Redis
-> realtime path (`src/lib/realtime/`), and the card session view
-> (`src/components/card/`). No Brain yet — that's Phase 2. The Jules adapter is
-> built to v1alpha docs + fixtures; set `JULES_API_KEY` to go live (see
-> `docs/operations/poller-and-realtime.md`). **Run `npm run verify:fast` before
-> every commit.**
+> **Status: Phase 2 complete.** Phases 0–1 (contracts, schemas, persistence,
+> static kanban, Jules engine + poller + SSE/Redis) plus Phase 2: the real
+> **Claude** `ConversationProvider` (`src/lib/adapters/claude/`), the
+> provider-agnostic agent loop + tool registry (`src/lib/agent/`), and the card
+> chat UI — Claude drives Jules through intent tools with a persist-and-resume
+> approval gate. Set `ANTHROPIC_API_KEY` + `JULES_API_KEY` to go live (see
+> `docs/operations/poller-and-realtime.md`). Next: Phase 3 (Connections +
+> config inheritance). **Run `npm run verify:fast` before every commit.**
 
 ## What this is
 
@@ -151,9 +151,9 @@ factories from config. Adapters are anti-corruption layers.
    `buildProviders`, Next.js app + Postgres + static kanban CRUD (dnd-kit).
 1. **Jules Engine, no Brain** ✅ — `createJulesEngine` + poller + SSE/Redis +
    card session view; a card starts a Jules task and shows the activity feed + PR.
-2. **Claude Brain + agent loop** ← _next._ `createClaudeBrain` + the loop; Engine
-   as tools; SSE narration; `ApprovalPolicy` gate. Full hybrid.
-3. **Connections, settings inheritance & multi-account** — the differentiator.
+2. **Claude Brain + agent loop** ✅ — `createClaudeBrain` + the loop (`lib/agent/`);
+   Engine as tools; chat UI; SSE narration; `ApprovalPolicy` gate (persist-and-resume).
+3. **Connections, settings inheritance & multi-account** ← _next._ The differentiator.
 4. **PWA polish + computer-off UX** — installable, web-push, deep links.
 5. **Prove the swap (future)** — `createSandboxEngine` (Claude-only),
    `createGeminiBrain` (Gemini-only). Each = one factory + a routing flip.
