@@ -67,3 +67,13 @@ export type StartExecutionBody = z.infer<typeof StartExecutionBody>;
 /** Steer a running execution. */
 export const SendMessageBody = z.object({ text: z.string().min(1) });
 export type SendMessageBody = z.infer<typeof SendMessageBody>;
+
+/** A chat turn with the Brain (Phase 2). */
+export const ChatMessageBody = z.object({ text: z.string().min(1) });
+export type ChatMessageBody = z.infer<typeof ChatMessageBody>;
+
+/** Respond to a parked tool-approval request. */
+export const ApprovalDecisionBody = z.object({
+    decision: z.enum(["approve", "reject"]),
+});
+export type ApprovalDecisionBody = z.infer<typeof ApprovalDecisionBody>;

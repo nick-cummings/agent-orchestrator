@@ -33,6 +33,7 @@ const view = (executions: CardSessionView["executions"]): CardSessionView => ({
     session: executions.length
         ? ({ id: "s1", cardId: "c1" } as CardSessionView["session"])
         : null,
+    messages: [],
     executions,
 });
 

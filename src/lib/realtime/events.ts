@@ -3,11 +3,11 @@ import { z } from "zod";
 import { ExecutionState } from "@/lib/core/schemas";
 
 /**
- * Events published on a session's realtime channel. Two kinds: a persisted
- * activity (carries `seq` so the client dedupes against its SSE replay) and an
- * execution state change. Zod-validated because in prod these cross Redis
- * (Increment 4) — a malformed payload fails loudly rather than corrupting a
- * live stream.
+ * Events published on a session's realtime channel. Two families share the
+ * channel: Engine events from the poller (`activity`, `state`) and Brain events
+ * from the agent loop (`text`/`thinking` deltas, `tool_call`, `approval_request`,
+ * a persisted `message`, `turn_end`). Zod-validated because in prod these cross
+ * Redis — a malformed payload is dropped, not streamed.
  */
 
 export const ActivityEvent = z.object({
@@ -32,8 +32,51 @@ export const StateEvent = z.object({
 });
 export type StateEvent = z.infer<typeof StateEvent>;
 
+// ── Brain (agent loop) events ─────────────────────────────────────────────────
+
+export const TextEvent = z.object({
+    type: z.literal("text"),
+    text: z.string(),
+});
+export const ThinkingEvent = z.object({
+    type: z.literal("thinking"),
+    text: z.string(),
+});
+export const ToolCallEvent = z.object({
+    type: z.literal("tool_call"),
+    id: z.string(),
+    name: z.string(),
+    input: z.unknown(),
+});
+export const ApprovalRequestEvent = z.object({
+    type: z.literal("approval_request"),
+    toolCallId: z.string(),
+    name: z.string(),
+    input: z.unknown(),
+    category: z.string(),
+});
+/** A persisted message for the client to render (deduped by `id`). Blocks are
+ *  carried loosely — the client renders defensively. */
+export const MessageEvent = z.object({
+    type: z.literal("message"),
+    id: z.string(),
+    role: z.string(),
+    seq: z.number().int(),
+    contentBlocks: z.array(z.unknown()),
+});
+export const TurnEndEvent = z.object({
+    type: z.literal("turn_end"),
+    stop: z.string(),
+});
+
 export const SessionEvent = z.discriminatedUnion("type", [
     ActivityEvent,
     StateEvent,
+    TextEvent,
+    ThinkingEvent,
+    ToolCallEvent,
+    ApprovalRequestEvent,
+    MessageEvent,
+    TurnEndEvent,
 ]);
 export type SessionEvent = z.infer<typeof SessionEvent>;

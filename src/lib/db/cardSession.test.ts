@@ -37,6 +37,7 @@ describe("getCardSession", () => {
     it("returns a null session before the first task", async () => {
         expect(await getCardSession(db, cardId)).toEqual({
             session: null,
+            messages: [],
             executions: [],
         });
     });

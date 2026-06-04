@@ -96,3 +96,17 @@ export const approveExecutionPlan = (
     executionId: string,
 ): Promise<{ ok: boolean }> =>
     send("POST", `/api/executions/${executionId}/approve-plan`, {});
+
+// ── Brain chat (Phase 2) ──────────────────────────────────────────────────────
+
+export const sendChatMessage = (
+    cardId: string,
+    text: string,
+): Promise<{ ok: boolean }> =>
+    send("POST", `/api/cards/${cardId}/messages`, { text });
+
+export const respondToApproval = (
+    sessionId: string,
+    decision: "approve" | "reject",
+): Promise<{ ok: boolean }> =>
+    send("POST", `/api/sessions/${sessionId}/approve`, { decision });

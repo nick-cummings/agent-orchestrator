@@ -9,8 +9,10 @@ const evt = (executionId: string): SessionEvent => ({
     state: "running",
 });
 
-const idOf = (r: IteratorResult<SessionEvent>): string =>
-    r.done ? "<done>" : r.value.executionId;
+const idOf = (r: IteratorResult<SessionEvent>): string => {
+    if (r.done) return "<done>";
+    return "executionId" in r.value ? r.value.executionId : "<none>";
+};
 
 describe("in-memory event bus", () => {
     it("delivers events published after subscription, in order", async () => {
